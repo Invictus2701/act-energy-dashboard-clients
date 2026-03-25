@@ -1,12 +1,13 @@
-import streamlit as st
+import os
+
+import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import os
-import numpy as np
+import streamlit as st
 
 # ─────────────────────────────────────────────
-# CONFIG & CONSTANTS
+# CONFIG & CONSTANTES
 # ─────────────────────────────────────────────
 st.set_page_config(
     page_title="Act Energy — Portfolio Dashboard",
@@ -31,8 +32,14 @@ ACT_COLORS = {
 }
 
 ACT_SEQUENCE = [
-    "#262E4B", "#86B9B7", "#D3A021", "#A4D65E",
-    "#5B8DB8", "#E8A87C", "#7C9EB2", "#C4D4A2",
+    "#262E4B",
+    "#86B9B7",
+    "#D3A021",
+    "#A4D65E",
+    "#5B8DB8",
+    "#E8A87C",
+    "#7C9EB2",
+    "#C4D4A2",
 ]
 
 act_template = go.layout.Template(
@@ -46,8 +53,19 @@ act_template = go.layout.Template(
     )
 )
 
-LOT_LABELS = {"BT": "Basse Tension", "HT": "Haute Tension", "BP": "Basse Pression", "HP": "Haute Pression", "EP": "Éclairage Public"}
-RELEVE_LABELS = {"AMR": "AMR (15 min)", "MMR": "MMR (mensuel)", "YMR": "YMR (annuel)", "SMR": "SMR (semestriel)"}
+LOT_LABELS = {
+    "BT": "Basse Tension",
+    "HT": "Haute Tension",
+    "BP": "Basse Pression",
+    "HP": "Haute Pression",
+    "EP": "Éclairage Public",
+}
+RELEVE_LABELS = {
+    "AMR": "AMR (15 min)",
+    "MMR": "MMR (mensuel)",
+    "YMR": "YMR (annuel)",
+    "SMR": "SMR (semestriel)",
+}
 
 # ─────────────────────────────────────────────
 # CSS
@@ -251,12 +269,24 @@ def load_data():
     # Ensure EAN is string with leading zeros
     df["site_EAN"] = df["site_EAN"].astype(str).str.strip()
     # Fill NaN in text columns
-    for col in ["site_nom", "societe_nom", "groupe_nom", "site_type_compteur", "site_type_releve", "site_lot"]:
+    for col in [
+        "site_nom",
+        "societe_nom",
+        "groupe_nom",
+        "site_type_compteur",
+        "site_type_releve",
+        "site_lot",
+    ]:
         df[col] = df[col].fillna("")
     # Fill NaN in numeric columns
-    for col in ["site_consommation_annuelle", "site_injection_annuelle",
-                 "societe_consommation_totale_electricite", "societe_consommation_totale_gaz",
-                 "groupe_consommation_totale_electricite", "groupe_consommation_totale_gaz"]:
+    for col in [
+        "site_consommation_annuelle",
+        "site_injection_annuelle",
+        "societe_consommation_totale_electricite",
+        "societe_consommation_totale_gaz",
+        "groupe_consommation_totale_electricite",
+        "groupe_consommation_totale_gaz",
+    ]:
         df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
     # Ensure bool
     df["groupe_actif"] = df["groupe_actif"].astype(bool)
@@ -272,7 +302,10 @@ with st.sidebar:
     if os.path.exists(logo_path):
         st.image(logo_path, use_container_width=True)
     else:
-        st.markdown('<p class="logo-text">ACT ENERGY</p><div class="logo-line"></div>', unsafe_allow_html=True)
+        st.markdown(
+            '<p class="logo-text">ACT ENERGY</p><div class="logo-line"></div>',
+            unsafe_allow_html=True,
+        )
 
     st.markdown("---")
 
@@ -294,7 +327,9 @@ with st.sidebar:
 df = load_data()
 
 if df is None:
-    st.error(f"Fichier '{EXCEL_FILE}' introuvable. Placez le fichier Excel dans le même répertoire que app.py.")
+    st.error(
+        f"Fichier '{EXCEL_FILE}' introuvable. Placez le fichier Excel dans le même répertoire que app.py."
+    )
     st.stop()
 
 
@@ -303,7 +338,10 @@ if df is None:
 # ═════════════════════════════════════════════
 if page == "Vue d'ensemble":
     st.title("Vue d'ensemble du portefeuille")
-    st.markdown('<p class="page-subtitle">Synthèse globale de l\'ensemble des points de livraison gérés par Act Energy</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="page-subtitle">Synthèse globale de l\'ensemble des points de livraison gérés par Act Energy</p>',
+        unsafe_allow_html=True,
+    )
 
     # KPIs
     total_ean = len(df)
@@ -318,15 +356,53 @@ if page == "Vue d'ensemble":
 
     c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
-        st.markdown(kpi_card("EAN actifs", fmt_number(total_ean), f"{df['societe_nom'].nunique()} sociétés"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "EAN actifs",
+                fmt_number(total_ean),
+                f"{df['societe_nom'].nunique()} sociétés",
+            ),
+            unsafe_allow_html=True,
+        )
     with c2:
-        st.markdown(kpi_card("Consommation Électricité", fmt_energy(total_elec_kwh, "GWh"), f"{fmt_number(nb_elec)} compteurs", "gold"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "Consommation Électricité",
+                fmt_energy(total_elec_kwh, "GWh"),
+                f"{fmt_number(nb_elec)} compteurs",
+                "gold",
+            ),
+            unsafe_allow_html=True,
+        )
     with c3:
-        st.markdown(kpi_card("Consommation Gaz", fmt_energy(total_gaz_kwh, "GWh"), f"{fmt_number(nb_gaz)} compteurs", "blue"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "Consommation Gaz",
+                fmt_energy(total_gaz_kwh, "GWh"),
+                f"{fmt_number(nb_gaz)} compteurs",
+                "blue",
+            ),
+            unsafe_allow_html=True,
+        )
     with c4:
-        st.markdown(kpi_card("Groupes actifs", str(nb_groupes_actifs), f"sur {df['groupe_nom'].nunique()} groupes"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "Groupes actifs",
+                str(nb_groupes_actifs),
+                f"sur {df['groupe_nom'].nunique()} groupes",
+            ),
+            unsafe_allow_html=True,
+        )
     with c5:
-        st.markdown(kpi_card("Injection totale", fmt_energy(total_injection, "MWh"), f"{fmt_number((df['site_injection_annuelle']>0).sum())} sites producteurs", "green"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "Injection totale",
+                fmt_energy(total_injection, "MWh"),
+                f"{fmt_number((df['site_injection_annuelle'] > 0).sum())} sites producteurs",
+                "green",
+            ),
+            unsafe_allow_html=True,
+        )
 
     st.markdown("")
 
@@ -335,10 +411,17 @@ if page == "Vue d'ensemble":
 
     with col_left:
         section_title("Répartition Électricité vs Gaz")
-        energy_split = df.groupby("site_type_energie")["site_consommation_annuelle"].sum().reset_index()
+        energy_split = (
+            df.groupby("site_type_energie")["site_consommation_annuelle"]
+            .sum()
+            .reset_index()
+        )
         energy_split.columns = ["Type", "kWh"]
         fig_donut = px.pie(
-            energy_split, values="kWh", names="Type", hole=0.55,
+            energy_split,
+            values="kWh",
+            names="Type",
+            hole=0.55,
             color_discrete_sequence=["#D3A021", "#86B9B7"],
         )
         fig_donut.update_traces(textinfo="percent+label", textfont_size=13)
@@ -348,11 +431,17 @@ if page == "Vue d'ensemble":
 
     with col_right:
         section_title("Répartition par lot")
-        lot_stats = df.groupby("site_lot").agg(
-            nb_ean=("site_EAN", "count"),
-            volume_kwh=("site_consommation_annuelle", "sum"),
-        ).reset_index()
-        lot_stats["lot_label"] = lot_stats["site_lot"].map(LOT_LABELS).fillna(lot_stats["site_lot"])
+        lot_stats = (
+            df.groupby("site_lot")
+            .agg(
+                nb_ean=("site_EAN", "count"),
+                volume_kwh=("site_consommation_annuelle", "sum"),
+            )
+            .reset_index()
+        )
+        lot_stats["lot_label"] = (
+            lot_stats["site_lot"].map(LOT_LABELS).fillna(lot_stats["site_lot"])
+        )
         lot_stats = lot_stats.sort_values("volume_kwh", ascending=True)
 
         fig_lot = go.Figure()
@@ -368,13 +457,17 @@ if page == "Vue d'ensemble":
             else:
                 bar_texts.append(f"{gwh:,.1f} GWh")
                 bar_positions.append("auto")
-        fig_lot.add_trace(go.Bar(
-            y=lot_stats["lot_label"], x=lot_stats["volume_kwh"] / 1_000_000,
-            orientation="h", name="Volume (GWh)",
-            marker_color="#262E4B",
-            text=bar_texts,
-            textposition=bar_positions,
-        ))
+        fig_lot.add_trace(
+            go.Bar(
+                y=lot_stats["lot_label"],
+                x=lot_stats["volume_kwh"] / 1_000_000,
+                orientation="h",
+                name="Volume (GWh)",
+                marker_color="#262E4B",
+                text=bar_texts,
+                textposition=bar_positions,
+            )
+        )
         plotly_defaults(fig_lot, 350)
         fig_lot.update_layout(
             xaxis_title="Volume (GWh)",
@@ -403,10 +496,15 @@ if page == "Vue d'ensemble":
 
     with col_left2:
         section_title("Public vs Privé")
-        type_split = df.groupby("groupe_type")["site_consommation_annuelle"].sum().reset_index()
+        type_split = (
+            df.groupby("groupe_type")["site_consommation_annuelle"].sum().reset_index()
+        )
         type_split.columns = ["Type", "kWh"]
         fig_type = px.pie(
-            type_split, values="kWh", names="Type", hole=0.55,
+            type_split,
+            values="kWh",
+            names="Type",
+            hole=0.55,
             color_discrete_sequence=["#262E4B", "#A4D65E"],
         )
         fig_type.update_traces(textinfo="percent+label", textfont_size=13)
@@ -416,24 +514,36 @@ if page == "Vue d'ensemble":
 
     with col_right2:
         section_title("Top 10 groupes par consommation")
-        grp = df.groupby("groupe_nom").agg(
-            elec=("groupe_consommation_totale_electricite", "first"),
-            gaz=("groupe_consommation_totale_gaz", "first"),
-        ).reset_index()
+        grp = (
+            df.groupby("groupe_nom")
+            .agg(
+                elec=("groupe_consommation_totale_electricite", "first"),
+                gaz=("groupe_consommation_totale_gaz", "first"),
+            )
+            .reset_index()
+        )
         grp["total"] = grp["elec"] + grp["gaz"]
         top10 = grp.nlargest(10, "total").sort_values("total", ascending=True)
 
         fig_top10 = go.Figure()
-        fig_top10.add_trace(go.Bar(
-            y=top10["groupe_nom"], x=top10["elec"] / 1e6,
-            orientation="h", name="Électricité",
-            marker_color="#D3A021",
-        ))
-        fig_top10.add_trace(go.Bar(
-            y=top10["groupe_nom"], x=top10["gaz"] / 1e6,
-            orientation="h", name="Gaz",
-            marker_color="#86B9B7",
-        ))
+        fig_top10.add_trace(
+            go.Bar(
+                y=top10["groupe_nom"],
+                x=top10["elec"] / 1e6,
+                orientation="h",
+                name="Électricité",
+                marker_color="#D3A021",
+            )
+        )
+        fig_top10.add_trace(
+            go.Bar(
+                y=top10["groupe_nom"],
+                x=top10["gaz"] / 1e6,
+                orientation="h",
+                name="Gaz",
+                marker_color="#86B9B7",
+            )
+        )
         plotly_defaults(fig_top10, 420)
         fig_top10.update_layout(barmode="stack", xaxis_title="Consommation (GWh)")
         st.plotly_chart(fig_top10, use_container_width=True)
@@ -444,7 +554,10 @@ if page == "Vue d'ensemble":
 # ═════════════════════════════════════════════
 elif page == "Analyse par Groupe":
     st.title("Analyse par Groupe")
-    st.markdown('<p class="page-subtitle">Détail d\'un ou plusieurs groupes clients et de leurs sociétés</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="page-subtitle">Détail d\'un ou plusieurs groupes clients et de leurs sociétés</p>',
+        unsafe_allow_html=True,
+    )
 
     groupes = sorted(df["groupe_nom"].unique())
     with st.sidebar:
@@ -453,7 +566,12 @@ elif page == "Analyse par Groupe":
         if all_groupes:
             selected_groupes = groupes
         else:
-            selected_groupes = st.multiselect("Sélectionner un ou plusieurs groupes", groupes, default=[groupes[0]], key="sel_grp")
+            selected_groupes = st.multiselect(
+                "Sélectionner un ou plusieurs groupes",
+                groupes,
+                default=[groupes[0]],
+                key="sel_grp",
+            )
         if not selected_groupes:
             selected_groupes = groupes
 
@@ -462,8 +580,12 @@ elif page == "Analyse par Groupe":
     # KPIs
     nb_societes = gdf["societe_nom"].nunique()
     nb_ean = len(gdf)
-    conso_elec = gdf[gdf["site_type_energie"] == "Electricité"]["site_consommation_annuelle"].sum()
-    conso_gaz = gdf[gdf["site_type_energie"] == "Gaz"]["site_consommation_annuelle"].sum()
+    conso_elec = gdf[gdf["site_type_energie"] == "Electricité"][
+        "site_consommation_annuelle"
+    ].sum()
+    conso_gaz = gdf[gdf["site_type_energie"] == "Gaz"][
+        "site_consommation_annuelle"
+    ].sum()
     nb_injections = (gdf["site_injection_annuelle"] > 0).sum()
     nb_grp = len(selected_groupes)
     g_types = gdf["groupe_type"].unique()
@@ -473,13 +595,25 @@ elif page == "Analyse par Groupe":
     with c1:
         st.markdown(kpi_card("Groupes", str(nb_grp)), unsafe_allow_html=True)
     with c2:
-        st.markdown(kpi_card("Sociétés", str(nb_societes), f"{fmt_number(nb_ean)} EAN"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Sociétés", str(nb_societes), f"{fmt_number(nb_ean)} EAN"),
+            unsafe_allow_html=True,
+        )
     with c3:
-        st.markdown(kpi_card("Conso Élec", fmt_energy(conso_elec), "", "gold"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Conso Élec", fmt_energy(conso_elec), "", "gold"),
+            unsafe_allow_html=True,
+        )
     with c4:
-        st.markdown(kpi_card("Conso Gaz", fmt_energy(conso_gaz), "", "blue"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Conso Gaz", fmt_energy(conso_gaz), "", "blue"),
+            unsafe_allow_html=True,
+        )
     with c5:
-        st.markdown(kpi_card("Injections", str(nb_injections), "sites producteurs", "green"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Injections", str(nb_injections), "sites producteurs", "green"),
+            unsafe_allow_html=True,
+        )
     with c6:
         st.markdown(kpi_card("Type", g_type_label), unsafe_allow_html=True)
 
@@ -490,22 +624,28 @@ elif page == "Analyse par Groupe":
 
     with col_left:
         section_title("Sociétés du groupe")
-        soc_agg = gdf.groupby("societe_nom").agg(
-            nb_ean=("site_EAN", "count"),
-            conso_elec=("societe_consommation_totale_electricite", "first"),
-            conso_gaz=("societe_consommation_totale_gaz", "first"),
-        ).reset_index()
+        soc_agg = (
+            gdf.groupby("societe_nom")
+            .agg(
+                nb_ean=("site_EAN", "count"),
+                conso_elec=("societe_consommation_totale_electricite", "first"),
+                conso_gaz=("societe_consommation_totale_gaz", "first"),
+            )
+            .reset_index()
+        )
         soc_agg["total"] = soc_agg["conso_elec"] + soc_agg["conso_gaz"]
         soc_agg = soc_agg.sort_values("total", ascending=False)
 
         st.dataframe(
-            soc_agg.rename(columns={
-                "societe_nom": "Société",
-                "nb_ean": "Nb EAN",
-                "conso_elec": "Élec (kWh)",
-                "conso_gaz": "Gaz (kWh)",
-                "total": "Total (kWh)",
-            }),
+            soc_agg.rename(
+                columns={
+                    "societe_nom": "Société",
+                    "nb_ean": "Nb EAN",
+                    "conso_elec": "Élec (kWh)",
+                    "conso_gaz": "Gaz (kWh)",
+                    "total": "Total (kWh)",
+                }
+            ),
             column_config={
                 "Élec (kWh)": st.column_config.NumberColumn(format="%,.0f"),
                 "Gaz (kWh)": st.column_config.NumberColumn(format="%,.0f"),
@@ -517,11 +657,19 @@ elif page == "Analyse par Groupe":
 
     with col_right:
         section_title("Répartition par lot")
-        lot_grp = gdf.groupby("site_lot")["site_consommation_annuelle"].sum().reset_index()
+        lot_grp = (
+            gdf.groupby("site_lot")["site_consommation_annuelle"].sum().reset_index()
+        )
         lot_grp.columns = ["Lot", "kWh"]
         lot_grp["label"] = lot_grp["Lot"].map(LOT_LABELS).fillna(lot_grp["Lot"])
         if len(lot_grp) > 0 and lot_grp["kWh"].sum() > 0:
-            fig_lot_grp = px.pie(lot_grp, values="kWh", names="label", hole=0.5, color_discrete_sequence=ACT_SEQUENCE)
+            fig_lot_grp = px.pie(
+                lot_grp,
+                values="kWh",
+                names="label",
+                hole=0.5,
+                color_discrete_sequence=ACT_SEQUENCE,
+            )
             fig_lot_grp.update_traces(textinfo="percent+label", textfont_size=11)
             plotly_defaults(fig_lot_grp, 320)
             fig_lot_grp.update_layout(showlegend=False)
@@ -535,17 +683,49 @@ elif page == "Analyse par Groupe":
     if total_inj_grp > 0:
         section_title("Consommation vs Injection")
         fig_inj = go.Figure()
-        fig_inj.add_trace(go.Bar(x=["Consommation"], y=[total_conso_grp / 1e3], name="Consommation (MWh)", marker_color="#262E4B"))
-        fig_inj.add_trace(go.Bar(x=["Injection"], y=[total_inj_grp / 1e3], name="Injection (MWh)", marker_color="#A4D65E"))
+        fig_inj.add_trace(
+            go.Bar(
+                x=["Consommation"],
+                y=[total_conso_grp / 1e3],
+                name="Consommation (MWh)",
+                marker_color="#262E4B",
+            )
+        )
+        fig_inj.add_trace(
+            go.Bar(
+                x=["Injection"],
+                y=[total_inj_grp / 1e3],
+                name="Injection (MWh)",
+                marker_color="#A4D65E",
+            )
+        )
         plotly_defaults(fig_inj, 280)
         fig_inj.update_layout(yaxis_title="MWh", showlegend=True)
         st.plotly_chart(fig_inj, use_container_width=True)
 
     # EAN detail table
     section_title("Détail des EAN")
-    display_cols = ["site_EAN", "site_nom", "site_consommation_annuelle", "site_type_energie", "site_lot", "site_type_releve", "site_type_compteur", "site_injection_annuelle"]
+    display_cols = [
+        "site_EAN",
+        "site_nom",
+        "site_consommation_annuelle",
+        "site_type_energie",
+        "site_lot",
+        "site_type_releve",
+        "site_type_compteur",
+        "site_injection_annuelle",
+    ]
     ean_df = gdf[display_cols].copy()
-    ean_df.columns = ["EAN", "Nom du site", "Conso annuelle (kWh)", "Énergie", "Lot", "Relevé", "Compteur", "Injection (kWh)"]
+    ean_df.columns = [
+        "EAN",
+        "Nom du site",
+        "Conso annuelle (kWh)",
+        "Énergie",
+        "Lot",
+        "Relevé",
+        "Compteur",
+        "Injection (kWh)",
+    ]
     st.dataframe(
         ean_df.sort_values("Conso annuelle (kWh)", ascending=False),
         column_config={
@@ -563,15 +743,22 @@ elif page == "Analyse par Groupe":
 # ═════════════════════════════════════════════
 elif page == "Analyse par Société":
     st.title("Analyse par Société")
-    st.markdown('<p class="page-subtitle">Détail d\'une ou plusieurs sociétés et de leurs compteurs</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="page-subtitle">Détail d\'une ou plusieurs sociétés et de leurs compteurs</p>',
+        unsafe_allow_html=True,
+    )
 
     with st.sidebar:
         st.markdown("---")
         groupes_for_filter = sorted(df["groupe_nom"].unique())
-        filter_groupes = st.multiselect("Filtrer par groupe", groupes_for_filter, key="soc_filter_grp")
+        filter_groupes = st.multiselect(
+            "Filtrer par groupe", groupes_for_filter, key="soc_filter_grp"
+        )
 
     if filter_groupes:
-        societes_list = sorted(df[df["groupe_nom"].isin(filter_groupes)]["societe_nom"].unique())
+        societes_list = sorted(
+            df[df["groupe_nom"].isin(filter_groupes)]["societe_nom"].unique()
+        )
     else:
         societes_list = sorted(df["societe_nom"].unique())
 
@@ -581,7 +768,12 @@ elif page == "Analyse par Société":
             selected_societes = societes_list
         else:
             default_soc = [societes_list[0]] if societes_list else []
-            selected_societes = st.multiselect("Sélectionner une ou plusieurs sociétés", societes_list, default=default_soc, key="sel_soc")
+            selected_societes = st.multiselect(
+                "Sélectionner une ou plusieurs sociétés",
+                societes_list,
+                default=default_soc,
+                key="sel_soc",
+            )
         if not selected_societes:
             selected_societes = societes_list
 
@@ -589,20 +781,35 @@ elif page == "Analyse par Société":
 
     # KPIs
     nb_ean_s = len(sdf)
-    conso_elec_s = sdf[sdf["site_type_energie"] == "Electricité"]["site_consommation_annuelle"].sum()
-    conso_gaz_s = sdf[sdf["site_type_energie"] == "Gaz"]["site_consommation_annuelle"].sum()
+    conso_elec_s = sdf[sdf["site_type_energie"] == "Electricité"][
+        "site_consommation_annuelle"
+    ].sum()
+    conso_gaz_s = sdf[sdf["site_type_energie"] == "Gaz"][
+        "site_consommation_annuelle"
+    ].sum()
     nb_soc = len(selected_societes)
     nb_grp_parent = sdf["groupe_nom"].nunique()
 
     c1, c2, c3, c4 = st.columns(4)
     with c1:
-        st.markdown(kpi_card("Sociétés", str(nb_soc), f"{fmt_number(nb_ean_s)} EAN"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Sociétés", str(nb_soc), f"{fmt_number(nb_ean_s)} EAN"),
+            unsafe_allow_html=True,
+        )
     with c2:
-        st.markdown(kpi_card("Conso Élec", fmt_energy(conso_elec_s), "", "gold"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Conso Élec", fmt_energy(conso_elec_s), "", "gold"),
+            unsafe_allow_html=True,
+        )
     with c3:
-        st.markdown(kpi_card("Conso Gaz", fmt_energy(conso_gaz_s), "", "blue"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Conso Gaz", fmt_energy(conso_gaz_s), "", "blue"),
+            unsafe_allow_html=True,
+        )
     with c4:
-        st.markdown(kpi_card("Groupes parents", str(nb_grp_parent)), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Groupes parents", str(nb_grp_parent)), unsafe_allow_html=True
+        )
 
     st.markdown("")
 
@@ -610,10 +817,20 @@ elif page == "Analyse par Société":
 
     with col_left:
         section_title("Répartition Électricité / Gaz")
-        en_split = sdf.groupby("site_type_energie")["site_consommation_annuelle"].sum().reset_index()
+        en_split = (
+            sdf.groupby("site_type_energie")["site_consommation_annuelle"]
+            .sum()
+            .reset_index()
+        )
         en_split.columns = ["Type", "kWh"]
         if en_split["kWh"].sum() > 0:
-            fig_en = px.pie(en_split, values="kWh", names="Type", hole=0.55, color_discrete_sequence=["#D3A021", "#86B9B7"])
+            fig_en = px.pie(
+                en_split,
+                values="kWh",
+                names="Type",
+                hole=0.55,
+                color_discrete_sequence=["#D3A021", "#86B9B7"],
+            )
             fig_en.update_traces(textinfo="percent+label", textfont_size=12)
             plotly_defaults(fig_en, 320)
             fig_en.update_layout(showlegend=False)
@@ -625,9 +842,17 @@ elif page == "Analyse par Société":
         section_title("Répartition par type de relevé")
         releve_split = sdf.groupby("site_type_releve")["site_EAN"].count().reset_index()
         releve_split.columns = ["Relevé", "Nb EAN"]
-        releve_split["label"] = releve_split["Relevé"].map(RELEVE_LABELS).fillna(releve_split["Relevé"])
+        releve_split["label"] = (
+            releve_split["Relevé"].map(RELEVE_LABELS).fillna(releve_split["Relevé"])
+        )
         if len(releve_split) > 0:
-            fig_rel = px.pie(releve_split, values="Nb EAN", names="label", hole=0.55, color_discrete_sequence=ACT_SEQUENCE)
+            fig_rel = px.pie(
+                releve_split,
+                values="Nb EAN",
+                names="label",
+                hole=0.55,
+                color_discrete_sequence=ACT_SEQUENCE,
+            )
             fig_rel.update_traces(textinfo="percent+label", textfont_size=12)
             plotly_defaults(fig_rel, 320)
             fig_rel.update_layout(showlegend=False)
@@ -635,9 +860,27 @@ elif page == "Analyse par Société":
 
     # EAN table
     section_title("Liste des sites / EAN")
-    display_cols_s = ["site_EAN", "site_nom", "site_consommation_annuelle", "site_type_energie", "site_lot", "site_type_releve", "site_type_compteur", "site_injection_annuelle"]
+    display_cols_s = [
+        "site_EAN",
+        "site_nom",
+        "site_consommation_annuelle",
+        "site_type_energie",
+        "site_lot",
+        "site_type_releve",
+        "site_type_compteur",
+        "site_injection_annuelle",
+    ]
     ean_s = sdf[display_cols_s].copy()
-    ean_s.columns = ["EAN", "Nom du site", "Conso annuelle (kWh)", "Énergie", "Lot", "Relevé", "Compteur", "Injection (kWh)"]
+    ean_s.columns = [
+        "EAN",
+        "Nom du site",
+        "Conso annuelle (kWh)",
+        "Énergie",
+        "Lot",
+        "Relevé",
+        "Compteur",
+        "Injection (kWh)",
+    ]
     st.dataframe(
         ean_s.sort_values("Conso annuelle (kWh)", ascending=False),
         column_config={
@@ -655,7 +898,10 @@ elif page == "Analyse par Société":
 # ═════════════════════════════════════════════
 elif page == "Analyse par Lot":
     st.title("Analyse par Lot (Marchés)")
-    st.markdown('<p class="page-subtitle">Répartition des compteurs et volumes par segment de marché</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="page-subtitle">Répartition des compteurs et volumes par segment de marché</p>',
+        unsafe_allow_html=True,
+    )
 
     all_lots = sorted(df["site_lot"].unique())
     with st.sidebar:
@@ -664,7 +910,12 @@ elif page == "Analyse par Lot":
         if all_lots_cb:
             selected_lots = all_lots
         else:
-            selected_lots = st.multiselect("Sélectionner un ou plusieurs lots", all_lots, default=all_lots, key="sel_lots")
+            selected_lots = st.multiselect(
+                "Sélectionner un ou plusieurs lots",
+                all_lots,
+                default=all_lots,
+                key="sel_lots",
+            )
         if not selected_lots:
             selected_lots = all_lots
 
@@ -675,31 +926,58 @@ elif page == "Analyse par Lot":
     with c1:
         st.markdown(kpi_card("EAN", fmt_number(len(ldf))), unsafe_allow_html=True)
     with c2:
-        st.markdown(kpi_card("Volume total", fmt_energy(ldf["site_consommation_annuelle"].sum()), "", "gold"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "Volume total",
+                fmt_energy(ldf["site_consommation_annuelle"].sum()),
+                "",
+                "gold",
+            ),
+            unsafe_allow_html=True,
+        )
     with c3:
-        st.markdown(kpi_card("Groupes", str(ldf["groupe_nom"].nunique())), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Groupes", str(ldf["groupe_nom"].nunique())),
+            unsafe_allow_html=True,
+        )
     with c4:
-        lots_label = ", ".join(selected_lots) if len(selected_lots) <= 3 else f"{len(selected_lots)} lots"
+        lots_label = (
+            ", ".join(selected_lots)
+            if len(selected_lots) <= 3
+            else f"{len(selected_lots)} lots"
+        )
         st.markdown(kpi_card("Lot(s)", lots_label, "", "blue"), unsafe_allow_html=True)
 
     st.markdown("")
 
     # Tableau récapitulatif par lot
     section_title("Récapitulatif par lot")
-    lot_summary = ldf.groupby("site_lot").agg(
-        nb_ean=("site_EAN", "count"),
-        volume=("site_consommation_annuelle", "sum"),
-        moyenne=("site_consommation_annuelle", "mean"),
-        mediane=("site_consommation_annuelle", "median"),
-        maximum=("site_consommation_annuelle", "max"),
-    ).reset_index()
+    lot_summary = (
+        ldf.groupby("site_lot")
+        .agg(
+            nb_ean=("site_EAN", "count"),
+            volume=("site_consommation_annuelle", "sum"),
+            moyenne=("site_consommation_annuelle", "mean"),
+            mediane=("site_consommation_annuelle", "median"),
+            maximum=("site_consommation_annuelle", "max"),
+        )
+        .reset_index()
+    )
     lot_summary["label"] = lot_summary["site_lot"].map(LOT_LABELS)
     lot_summary = lot_summary.sort_values("volume", ascending=False)
     st.dataframe(
-        lot_summary[["label", "nb_ean", "volume", "moyenne", "mediane", "maximum"]].rename(columns={
-            "label": "Lot", "nb_ean": "Nb EAN", "volume": "Volume (kWh)",
-            "moyenne": "Moyenne (kWh)", "mediane": "Médiane (kWh)", "maximum": "Maximum (kWh)",
-        }),
+        lot_summary[
+            ["label", "nb_ean", "volume", "moyenne", "mediane", "maximum"]
+        ].rename(
+            columns={
+                "label": "Lot",
+                "nb_ean": "Nb EAN",
+                "volume": "Volume (kWh)",
+                "moyenne": "Moyenne (kWh)",
+                "mediane": "Médiane (kWh)",
+                "maximum": "Maximum (kWh)",
+            }
+        ),
         column_config={
             "Volume (kWh)": st.column_config.NumberColumn(format="%,.0f"),
             "Moyenne (kWh)": st.column_config.NumberColumn(format="%,.0f"),
@@ -714,12 +992,18 @@ elif page == "Analyse par Lot":
 
     with col_left:
         section_title("Distribution des consommations")
-        conso_nonzero = ldf[ldf["site_consommation_annuelle"] > 0]["site_consommation_annuelle"]
+        conso_nonzero = ldf[ldf["site_consommation_annuelle"] > 0][
+            "site_consommation_annuelle"
+        ]
         if len(conso_nonzero) > 0:
             fig_hist = px.histogram(
-                conso_nonzero, nbins=50,
+                conso_nonzero,
+                nbins=50,
                 color_discrete_sequence=["#262E4B"],
-                labels={"value": "Consommation annuelle (kWh)", "count": "Nombre d'EAN"},
+                labels={
+                    "value": "Consommation annuelle (kWh)",
+                    "count": "Nombre d'EAN",
+                },
             )
             plotly_defaults(fig_hist, 380)
             fig_hist.update_layout(
@@ -733,13 +1017,25 @@ elif page == "Analyse par Lot":
 
     with col_right:
         section_title("Top 15 consommateurs")
-        top15 = ldf.nlargest(15, "site_consommation_annuelle")[["site_nom", "site_consommation_annuelle", "site_lot"]].copy()
+        top15 = ldf.nlargest(15, "site_consommation_annuelle")[
+            ["site_nom", "site_consommation_annuelle", "site_lot"]
+        ].copy()
         top15 = top15.sort_values("site_consommation_annuelle", ascending=True)
         fig_top15 = px.bar(
-            top15, y="site_nom", x="site_consommation_annuelle",
-            orientation="h", color="site_lot",
-            color_discrete_map={lot: ACT_SEQUENCE[i % len(ACT_SEQUENCE)] for i, lot in enumerate(sorted(df["site_lot"].unique()))},
-            labels={"site_consommation_annuelle": "kWh", "site_nom": "", "site_lot": "Lot"},
+            top15,
+            y="site_nom",
+            x="site_consommation_annuelle",
+            orientation="h",
+            color="site_lot",
+            color_discrete_map={
+                lot: ACT_SEQUENCE[i % len(ACT_SEQUENCE)]
+                for i, lot in enumerate(sorted(df["site_lot"].unique()))
+            },
+            labels={
+                "site_consommation_annuelle": "kWh",
+                "site_nom": "",
+                "site_lot": "Lot",
+            },
         )
         plotly_defaults(fig_top15, 380)
         st.plotly_chart(fig_top15, use_container_width=True)
@@ -750,7 +1046,10 @@ elif page == "Analyse par Lot":
 # ═════════════════════════════════════════════
 elif page == "Injections & Renouvelable":
     st.title("Injections & Renouvelable")
-    st.markdown('<p class="page-subtitle">Production locale d\'énergie (panneaux solaires) et ratio injection/consommation</p>', unsafe_allow_html=True)
+    st.markdown(
+        '<p class="page-subtitle">Production locale d\'énergie (panneaux solaires) et ratio injection/consommation</p>',
+        unsafe_allow_html=True,
+    )
 
     inj_df = df[df["site_injection_annuelle"] > 0]
 
@@ -762,11 +1061,30 @@ elif page == "Injections & Renouvelable":
 
     c1, c2, c3 = st.columns(3)
     with c1:
-        st.markdown(kpi_card("Sites producteurs", fmt_number(nb_sites_inj), f"sur {fmt_number(len(df))} EAN totaux", "green"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "Sites producteurs",
+                fmt_number(nb_sites_inj),
+                f"sur {fmt_number(len(df))} EAN totaux",
+                "green",
+            ),
+            unsafe_allow_html=True,
+        )
     with c2:
-        st.markdown(kpi_card("Volume injecté", fmt_energy(vol_inj, "MWh"), "", "green"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card("Volume injecté", fmt_energy(vol_inj, "MWh"), "", "green"),
+            unsafe_allow_html=True,
+        )
     with c3:
-        st.markdown(kpi_card("Ratio injection/conso", f"{ratio_inj:.1f}%", "de la consommation totale", "gold"), unsafe_allow_html=True)
+        st.markdown(
+            kpi_card(
+                "Ratio injection/conso",
+                f"{ratio_inj:.1f}%",
+                "de la consommation totale",
+                "gold",
+            ),
+            unsafe_allow_html=True,
+        )
 
     st.markdown("")
 
@@ -774,12 +1092,16 @@ elif page == "Injections & Renouvelable":
 
     with col_left:
         section_title("Injections par groupe")
-        grp_inj = inj_df.groupby("groupe_nom")["site_injection_annuelle"].sum().reset_index()
+        grp_inj = (
+            inj_df.groupby("groupe_nom")["site_injection_annuelle"].sum().reset_index()
+        )
         grp_inj.columns = ["Groupe", "Injection (kWh)"]
         grp_inj = grp_inj.sort_values("Injection (kWh)", ascending=False)
         if len(grp_inj) > 0:
             fig_tree = px.treemap(
-                grp_inj.head(20), path=["Groupe"], values="Injection (kWh)",
+                grp_inj.head(20),
+                path=["Groupe"],
+                values="Injection (kWh)",
                 color_discrete_sequence=ACT_SEQUENCE,
             )
             plotly_defaults(fig_tree, 420)
@@ -788,18 +1110,27 @@ elif page == "Injections & Renouvelable":
 
     with col_right:
         section_title("Ratio injection/conso par société")
-        soc_conso = df.groupby("societe_nom").agg(
-            conso=("site_consommation_annuelle", "sum"),
-            injection=("site_injection_annuelle", "sum"),
-        ).reset_index()
+        soc_conso = (
+            df.groupby("societe_nom")
+            .agg(
+                conso=("site_consommation_annuelle", "sum"),
+                injection=("site_injection_annuelle", "sum"),
+            )
+            .reset_index()
+        )
         soc_conso = soc_conso[soc_conso["injection"] > 0].copy()
-        soc_conso["ratio"] = soc_conso["injection"] / soc_conso["conso"].replace(0, np.nan) * 100
+        soc_conso["ratio"] = (
+            soc_conso["injection"] / soc_conso["conso"].replace(0, np.nan) * 100
+        )
         soc_conso = soc_conso.dropna(subset=["ratio"])
         if len(soc_conso) > 0:
             fig_scatter = px.scatter(
-                soc_conso, x="conso", y="injection",
+                soc_conso,
+                x="conso",
+                y="injection",
                 hover_name="societe_nom",
-                size="injection", size_max=25,
+                size="injection",
+                size_max=25,
                 color_discrete_sequence=["#A4D65E"],
                 labels={"conso": "Consommation (kWh)", "injection": "Injection (kWh)"},
             )
@@ -808,8 +1139,26 @@ elif page == "Injections & Renouvelable":
 
     # Table
     section_title("Sites producteurs")
-    inj_display = inj_df[["site_EAN", "site_nom", "societe_nom", "groupe_nom", "site_injection_annuelle", "site_consommation_annuelle", "site_lot"]].copy()
-    inj_display.columns = ["EAN", "Site", "Société", "Groupe", "Injection (kWh)", "Conso (kWh)", "Lot"]
+    inj_display = inj_df[
+        [
+            "site_EAN",
+            "site_nom",
+            "societe_nom",
+            "groupe_nom",
+            "site_injection_annuelle",
+            "site_consommation_annuelle",
+            "site_lot",
+        ]
+    ].copy()
+    inj_display.columns = [
+        "EAN",
+        "Site",
+        "Société",
+        "Groupe",
+        "Injection (kWh)",
+        "Conso (kWh)",
+        "Lot",
+    ]
     inj_display = inj_display.sort_values("Injection (kWh)", ascending=False)
     st.dataframe(
         inj_display,
