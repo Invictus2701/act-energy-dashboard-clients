@@ -1041,4 +1041,132 @@ elif page == "Analyse par Lot":
         st.plotly_chart(fig_top15, use_container_width=True)
 
 
-# ════════════════════════════════════════════�
+# ═════════════════════════════════════════════
+# PAGE 5 — INJECTIONS & RENOUVELABLE
+# ═════════════════════════════════════════════
+elif page == "Injections & Renouvelable":
+    st.title("Injections & Renouvelable")
+    st.markdown(
+        '<p class="page-subtitle">Production locale d\'énergie (panneaux solaires) et ratio injection/consommation</p>',
+        unsafe_allow_html=True,
+    )
+
+    inj_df = df[df["site_injection_annuelle"] > 0]
+
+    # KPIs
+    nb_sites_inj = len(inj_df)
+    vol_inj = inj_df["site_injection_annuelle"].sum()
+    total_conso = df["site_consommation_annuelle"].sum()
+    ratio_inj = (vol_inj / total_conso * 100) if total_conso > 0 else 0
+
+    c1, c2, c3 = st.columns(3)
+    with c1:
+        st.markdown(
+            kpi_card(
+                "Sites producteurs",
+                fmt_number(nb_sites_inj),
+                f"sur {fmt_number(len(df))} EAN totaux",
+                "green",
+            ),
+            unsafe_allow_html=True,
+        )
+    with c2:
+        st.markdown(
+            kpi_card("Volume injecté", fmt_energy(vol_inj, "MWh"), "", "green"),
+            unsafe_allow_html=True,
+        )
+    with c3:
+        st.markdown(
+            kpi_card(
+                "Ratio injection/conso",
+                f"{ratio_inj:.1f}%",
+                "de la consommation totale",
+                "gold",
+            ),
+            unsafe_allow_html=True,
+        )
+
+    st.markdown("")
+
+    col_left, col_right = st.columns(2)
+
+    with col_left:
+        section_title("Injections par groupe")
+        grp_inj = (
+            inj_df.groupby("groupe_nom")["site_injection_annuelle"].sum().reset_index()
+        )
+        grp_inj.columns = ["Groupe", "Injection (kWh)"]
+        grp_inj = grp_inj.sort_values("Injection (kWh)", ascending=False)
+        if len(grp_inj) > 0:
+            fig_tree = px.treemap(
+                grp_inj.head(20),
+                path=["Groupe"],
+                values="Injection (kWh)",
+                color_discrete_sequence=ACT_SEQUENCE,
+            )
+            plotly_defaults(fig_tree, 420)
+            fig_tree.update_traces(textinfo="label+value")
+            st.plotly_chart(fig_tree, use_container_width=True)
+
+    with col_right:
+        section_title("Ratio injection/conso par société")
+        soc_conso = (
+            df.groupby("societe_nom")
+            .agg(
+                conso=("site_consommation_annuelle", "sum"),
+                injection=("site_injection_annuelle", "sum"),
+            )
+            .reset_index()
+        )
+        soc_conso = soc_conso[soc_conso["injection"] > 0].copy()
+        soc_conso["ratio"] = (
+            soc_conso["injection"] / soc_conso["conso"].replace(0, np.nan) * 100
+        )
+        soc_conso = soc_conso.dropna(subset=["ratio"])
+        if len(soc_conso) > 0:
+            fig_scatter = px.scatter(
+                soc_conso,
+                x="conso",
+                y="injection",
+                hover_name="societe_nom",
+                size="injection",
+                size_max=25,
+                color_discrete_sequence=["#A4D65E"],
+                labels={"conso": "Consommation (kWh)", "injection": "Injection (kWh)"},
+            )
+            plotly_defaults(fig_scatter, 420)
+            st.plotly_chart(fig_scatter, use_container_width=True)
+
+    # Table
+    section_title("Sites producteurs")
+    inj_display = inj_df[
+        [
+            "site_EAN",
+            "site_nom",
+            "societe_nom",
+            "groupe_nom",
+            "site_injection_annuelle",
+            "site_consommation_annuelle",
+            "site_lot",
+        ]
+    ].copy()
+    inj_display.columns = [
+        "EAN",
+        "Site",
+        "Société",
+        "Groupe",
+        "Injection (kWh)",
+        "Conso (kWh)",
+        "Lot",
+    ]
+    inj_display = inj_display.sort_values("Injection (kWh)", ascending=False)
+    st.dataframe(
+        inj_display,
+        column_config={
+            "Injection (kWh)": st.column_config.NumberColumn(format="%,.0f"),
+            "Conso (kWh)": st.column_config.NumberColumn(format="%,.0f"),
+        },
+        use_container_width=True,
+        hide_index=True,
+        height=400,
+    )
