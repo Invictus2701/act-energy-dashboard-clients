@@ -569,7 +569,7 @@ elif page == "Analyse par Groupe":
             selected_groupes = st.multiselect(
                 "Sélectionner un ou plusieurs groupes",
                 groupes,
-                default=[groupes[0]],
+                default=[],
                 key="sel_grp",
             )
         if not selected_groupes:
@@ -767,11 +767,10 @@ elif page == "Analyse par Société":
         if all_societes:
             selected_societes = societes_list
         else:
-            default_soc = [societes_list[0]] if societes_list else []
             selected_societes = st.multiselect(
                 "Sélectionner une ou plusieurs sociétés",
                 societes_list,
-                default=default_soc,
+                default=[],
                 key="sel_soc",
             )
         if not selected_societes:
