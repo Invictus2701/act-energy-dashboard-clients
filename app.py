@@ -759,7 +759,7 @@ elif page == "Analyse par Groupe":
     g_types = gdf["groupe_type"].unique()
     g_type_label = g_types[0] if len(g_types) == 1 else "Mixte"
 
-    c1, c2, c3, c4, c5, c6 = st.columns(6)
+    c1, c2, c3, c4, c5 = st.columns(5)
     with c1:
         st.markdown(kpi_card("Groupes", str(nb_grp)), unsafe_allow_html=True)
     with c2:
@@ -782,8 +782,6 @@ elif page == "Analyse par Groupe":
             kpi_card("Injections", str(nb_injections), "sites producteurs", "green"),
             unsafe_allow_html=True,
         )
-    with c6:
-        st.markdown(kpi_card("Type", g_type_label), unsafe_allow_html=True)
 
     st.markdown("")
 
@@ -845,8 +843,8 @@ elif page == "Analyse par Groupe":
         else:
             st.info("Aucune consommation enregistrée pour ce groupe.")
 
-    # ── Profil de relevé par groupe ──
-    section_title("Profil de relevé par groupe")
+    # ── Profil de relevé par groupe — Top 20 ──
+    section_title("Profil de relevé par groupe — Top 20")
     releve_grp = (
         gdf[gdf["site_type_releve"] != ""]
         .groupby(["groupe_nom", "site_type_releve"])["site_EAN"]
@@ -856,17 +854,35 @@ elif page == "Analyse par Groupe":
     releve_grp.columns = ["Groupe", "Relevé", "Nb EAN"]
     releve_grp["Relevé label"] = releve_grp["Relevé"].map(RELEVE_LABELS).fillna(releve_grp["Relevé"])
     if len(releve_grp) > 0:
+        # Top 20 groupes par nombre total d'EAN, triés du plus petit au plus grand
+        top20_groupes = (
+            releve_grp.groupby("Groupe")["Nb EAN"]
+            .sum()
+            .nlargest(20)
+            .sort_values(ascending=True)
+            .index.tolist()
+        )
+        releve_top20 = releve_grp[releve_grp["Groupe"].isin(top20_groupes)]
+        # Ordre catégoriel croissant
+        releve_top20["Groupe"] = pd.Categorical(
+            releve_top20["Groupe"], categories=top20_groupes, ordered=True
+        )
         fig_releve_grp = px.bar(
-            releve_grp,
-            x="Groupe",
-            y="Nb EAN",
+            releve_top20.sort_values("Groupe"),
+            x="Nb EAN",
+            y="Groupe",
             color="Relevé label",
             barmode="stack",
+            orientation="h",
             color_discrete_sequence=ACT_SEQUENCE,
             labels={"Relevé label": "Type de relevé"},
         )
-        plotly_defaults(fig_releve_grp, 400)
-        fig_releve_grp.update_layout(xaxis_tickangle=-45)
+        plotly_defaults(fig_releve_grp, 550)
+        fig_releve_grp.update_layout(
+            yaxis_title="",
+            xaxis_title="Nb EAN",
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+        )
         st.plotly_chart(fig_releve_grp, use_container_width=True)
 
     # Injection bar
